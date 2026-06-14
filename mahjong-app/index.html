@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🀄 你的专属麻将日记</title>
+<style>
+  :root {
+    --bg: #faf8f5;
+    --card: #fff;
+    --win: #e74c3c;
+    --lose: #555;
+    --win-bg: #fff5f5;
+    --lose-bg: #f8f8f8;
+    --gold: #d4940b;
+    --text: #333;
+    --text-light: #999;
+    --border: #eee;
+    --shadow: 0 2px 16px rgba(0,0,0,0.06);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+  .container { max-width: 460px; margin: 0 auto; padding: 0 16px; }
+
+  /* Header */
+  header {
+    background: linear-gradient(135deg, #c0392b, #e74c3c, #f06292);
+    color: #fff;
+    padding: 28px 16px 22px;
+    text-align: center;
+    position: sticky; top: 0; z-index: 10;
+    box-shadow: 0 2px 12px rgba(192,57,43,0.25);
+  }
+  header h1 { font-size: 1.5em; letter-spacing: 1px; }
+  header .heart { font-size: 1.3em; animation: pulse 1.5s infinite; display: inline-block; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+  header .motto { font-size: 0.8em; opacity: 0.85; margin-top: 4px; }
+
+  /* Emotion Banner */
+  .emotion-banner {
+    margin: 16px 0; padding: 18px 20px; border-radius: 14px;
+    text-align: center; box-shadow: var(--shadow);
+    transition: all 0.4s;
+  }
+  .emotion-banner.win {
+    background: linear-gradient(135deg, #fff5f5, #ffe8e8);
+    border: 1.5px solid #fcc;
+  }
+  .emotion-banner.lose {
+    background: linear-gradient(135deg, #f5f5f5, #e8e8e8);
+    border: 1.5px solid #eee;
+  }
+  .emotion-banner.neutral {
+    background: linear-gradient(135deg, #fffdf5, #fff9e0);
+    border: 1.5px solid #ffeeba;
+  }
+  .emotion-banner .emoji { font-size: 2.8em; margin-bottom: 6px; }
+  .emotion-banner .msg { font-size: 1.05em; font-weight: 600; line-height: 1.6; color: #444; }
+  .emotion-banner .sub-msg { font-size: 0.8em; color: var(--text-light); margin-top: 4px; }
+
+  /* Quick Stats Bar */
+  .quick-stats {
+    display: flex; gap: 10px; margin-bottom: 16px;
+  }
+  .quick-stat {
+    flex: 1; background: var(--card); border-radius: 12px;
+    padding: 14px 10px; text-align: center; box-shadow: var(--shadow);
+  }
+  .quick-stat .num {
+    font-size: 1.6em; font-weight: 700;
+  }
+  .quick-stat .num.win-color { color: var(--win); }
+  .quick-stat .num.lose-color { color: var(--lose); }
+  .quick-stat .label { font-size: 0.75em; color: var(--text-light); margin-top: 2px; }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 0; margin-bottom: 14px;
+    background: var(--card); border-radius: 12px;
+    overflow: hidden; box-shadow: var(--shadow);
+  }
+  .tab {
+    flex: 1; padding: 13px 8px; text-align: center; cursor: pointer;
+    border: none; background: none; font-size: 0.9em; font-weight: 600;
+    color: var(--text-light); transition: all 0.2s;
+  }
+  .tab.active { color: var(--win); background: #fff5f5; border-bottom: 3px solid var(--win); }
+  .tab:hover { background: #fffafa; }
+
+  /* Cards */
+  .card {
+    background: var(--card); border-radius: 14px; padding: 20px;
+    margin-bottom: 14px; box-shadow: var(--shadow);
+  }
+  .card h2 { font-size: 1.05em; margin-bottom: 16px; color: #555; display: flex; align-items: center; gap: 8px; }
+
+  /* Form */
+  .big-toggle {
+    display: flex; gap: 12px; margin-bottom: 18px;
+  }
+  .big-toggle button {
+    flex: 1; padding: 28px 16px; border: 2.5px solid var(--border);
+    border-radius: 14px; background: #fff; cursor: pointer;
+    font-size: 1.1em; font-weight: 700; transition: all 0.25s;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .big-toggle button .icon { font-size: 2em; }
+  .big-toggle .btn-win.selected {
+    border-color: #e74c3c; background: #fff5f5; color: #e74c3c;
+    box-shadow: 0 0 0 4px rgba(231,76,60,0.1);
+  }
+  .big-toggle .btn-lose.selected {
+    border-color: #555; background: #f5f5f5; color: #333;
+    box-shadow: 0 0 0 4px rgba(0,0,0,0.05);
+  }
+
+  .form-row { margin-bottom: 14px; }
+  .form-row label { display: block; font-size: 0.85em; font-weight: 600; color: #777; margin-bottom: 6px; }
+  .form-row input, .form-row textarea {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+    border-radius: 10px; font-size: 0.95em; background: #fafaf9;
+    transition: border 0.2s; font-family: inherit;
+  }
+  .form-row input:focus, .form-row textarea:focus { outline: none; border-color: #e74c3c; }
+  .form-row textarea { resize: vertical; min-height: 60px; }
+
+  .btn {
+    padding: 13px 20px; border: none; border-radius: 10px; font-size: 1em;
+    font-weight: 700; cursor: pointer; transition: all 0.2s; width: 100%;
+  }
+  .btn-save { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; }
+  .btn-save:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-remind { background: var(--gold); color: #fff; }
+  .btn-remind:hover { opacity: 0.9; }
+
+  .btn-sm { padding: 7px 14px; font-size: 0.78em; border-radius: 8px; width: auto; }
+  .btn-ghost { background: none; color: #999; border: 1px solid #ddd; }
+  .btn-ghost:hover { background: #f5f5f5; }
+  .btn-del { background: none; color: #e74c3c; }
+  .btn-del:hover { background: #fff5f5; }
+
+  /* Records */
+  .record-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .record-item:last-child { border-bottom: none; }
+  .record-icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5em; flex-shrink: 0;
+  }
+  .record-icon.win { background: #fff0f0; }
+  .record-icon.lose { background: #f0f0f0; }
+  .record-info { flex: 1; min-width: 0; }
+  .record-info .result { font-weight: 700; font-size: 0.95em; }
+  .record-info .result.win-text { color: var(--win); }
+  .record-info .result.lose-text { color: var(--lose); }
+  .record-info .date { font-size: 0.75em; color: var(--text-light); }
+  .record-info .note { font-size: 0.82em; color: #777; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .record-amount { font-weight: 700; font-size: 1em; text-align: right; }
+  .record-amount.win-text { color: var(--win); }
+  .record-amount.lose-text { color: var(--lose); }
+  .record-emotion { font-size: 0.75em; color: var(--text-light); text-align: right; margin-top: 2px; max-width: 120px; }
+
+  /* Stats */
+  .stat-row { display: flex; gap: 10px; margin-bottom: 10px; }
+  .stat-box {
+    flex: 1; text-align: center; padding: 16px 8px;
+    background: #fafaf9; border-radius: 10px;
+  }
+  .stat-box .num { font-size: 1.6em; font-weight: 700; }
+  .stat-box .num.red { color: var(--win); }
+  .stat-box .num.gray { color: #555; }
+  .stat-box .num.gold { color: var(--gold); }
+  .stat-box .label { font-size: 0.75em; color: var(--text-light); margin-top: 2px; }
+
+  .streak-bar {
+    display: flex; gap: 4px; margin-top: 12px; justify-content: center;
+  }
+  .streak-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85em; font-weight: 700; color: #fff;
+  }
+  .streak-dot.win-dot { background: #e74c3c; }
+  .streak-dot.lose-dot { background: #999; }
+
+  /* Reminder */
+  .reminder-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .reminder-item:last-child { border-bottom: none; }
+  .reminder-item .r-time { font-weight: 700; font-size: 1em; color: #555; }
+  .reminder-item .r-detail { font-size: 0.8em; color: var(--text-light); }
+  .reminder-item .r-badge {
+    font-size: 0.72em; padding: 4px 10px; border-radius: 10px; font-weight: 600;
+  }
+  .badge-upcoming { background: #fff3cd; color: #856404; }
+  .badge-past { background: #f1f1f1; color: #aaa; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .empty { text-align: center; color: #ccc; padding: 36px; font-size: 0.9em; }
+  .empty .big-emoji { font-size: 3em; margin-bottom: 8px; }
+
+  /* Summary */
+  .summary-stats {
+    display: flex; gap: 10px; margin-bottom: 14px;
+  }
+  .summary-stat {
+    flex: 1; text-align: center; padding: 12px 6px;
+    background: #fafaf9; border-radius: 10px;
+  }
+  .summary-stat .num { font-size: 1.3em; font-weight: 700; }
+  .summary-stat .num.w { color: var(--win); }
+  .summary-stat .num.l { color: var(--lose); }
+  .summary-stat .num.n { color: var(--gold); }
+  .summary-stat .label { font-size: 0.72em; color: var(--text-light); margin-top: 2px; }
+  .summary-emotion {
+    padding: 14px; border-radius: 10px; font-size: 0.88em;
+    line-height: 1.7; color: #555;
+  }
+  .summary-emotion.positive { background: #fff8f6; border: 1px solid #fdd; }
+  .summary-emotion.negative { background: #f8f8f8; border: 1px solid #eee; }
+  .summary-emotion.mixed { background: #fffdf5; border: 1px solid #ffeeba; }
+  .summary-emotion .se-emoji { font-size: 1.6em; margin-bottom: 6px; }
+
+  /* Mood picker */
+  .mood-pick { display: flex; gap: 8px; }
+  .mood-btn {
+    flex: 1; padding: 10px 4px; border: 2px solid var(--border);
+    border-radius: 10px; background: #fff; cursor: pointer;
+    font-size: 1.3em; display: flex; flex-direction: column;
+    align-items: center; gap: 2px; transition: all 0.2s;
+  }
+  .mood-btn span { font-size: 0.55em; color: #999; font-weight: 500; }
+  .mood-btn.selected { border-color: var(--win); background: #fff5f5; transform: scale(1.05); }
+  .mood-btn:hover { background: #fdf8f8; }
+
+  /* Milestone overlay */
+  .milestone-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeIn 0.3s;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .milestone-card {
+    background: #fff; border-radius: 20px; padding: 30px 24px;
+    text-align: center; max-width: 340px; width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .milestone-card .ms-emoji { font-size: 4em; margin-bottom: 10px; animation: bounce 0.6s infinite alternate; }
+  @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+  .milestone-card .ms-title { font-size: 1.4em; font-weight: 800; color: var(--win); margin-bottom: 8px; }
+  .milestone-card .ms-detail { font-size: 0.95em; color: #555; line-height: 1.6; margin-bottom: 18px; }
+  .milestone-card .ms-btn {
+    padding: 12px 40px; border: none; border-radius: 25px;
+    background: linear-gradient(135deg, #e74c3c, #f06292);
+    color: #fff; font-size: 1em; font-weight: 700; cursor: pointer;
+  }
+
+  /* Simple chart */
+  .chart-container { margin: 16px 0; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 3px; height: 100px; padding: 0 4px; }
+  .bar-chart .bar {
+    flex: 1; border-radius: 3px 3px 0 0; min-width: 6px;
+    transition: height 0.3s; cursor: pointer; position: relative;
+  }
+  .bar-chart .bar.win-bar { background: linear-gradient(180deg, #e74c3c, #f06292); }
+  .bar-chart .bar.lose-bar { background: linear-gradient(180deg, #999, #bbb); }
+  .bar-chart .bar:hover { opacity: 0.75; }
+  .chart-labels { display: flex; gap: 3px; padding: 4px 4px; font-size: 0.6em; color: #aaa; }
+  .chart-labels span { flex: 1; text-align: center; min-width: 6px; }
+
+  /* Diary-style records */
+  .diary-record {
+    padding: 16px; margin-bottom: 10px; border-radius: 12px;
+    position: relative;
+  }
+  .diary-record.win-bg { background: linear-gradient(135deg, #fff8f6, #fff0f0); border-left: 4px solid #e74c3c; }
+  .diary-record.lose-bg { background: linear-gradient(135deg, #f9f9f9, #f2f2f2); border-left: 4px solid #999; }
+  .diary-record .d-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .diary-record .d-mood { font-size: 1.8em; }
+  .diary-record .d-amount { font-weight: 800; font-size: 1.1em; text-align: right; }
+  .diary-record .d-amount.win-text { color: var(--win); }
+  .diary-record .d-amount.lose-text { color: var(--lose); }
+  .diary-record .d-date { font-size: 0.75em; color: var(--text-light); }
+  .diary-record .d-story { font-size: 0.88em; color: #555; line-height: 1.6; margin-top: 6px; }
+  .diary-record .d-note { font-size: 0.82em; color: #888; margin-top: 4px; font-style: italic; }
+  .diary-record .d-badge {
+    display: inline-block; font-size: 0.68em; padding: 3px 8px;
+    border-radius: 10px; font-weight: 600; margin-top: 6px;
+  }
+  .badge-milestone { background: #ffe0e0; color: #c0392b; }
+
+  /* Toast */
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: #333; color: #fff; padding: 10px 24px; border-radius: 20px;
+    font-size: 0.9em; z-index: 999; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="heart">❤️</div>
+  <h1>🀄 你的专属麻将日记</h1>
+  <div class="motto">每一局都值得被记住，每一种心情都值得被温柔对待 ✨</div>
+</header>
+
+<div class="container">
+  <!-- Emotion Banner -->
+  <div class="emotion-banner neutral" id="emotionBanner">
+    <div class="emoji" id="emotionEmoji">🀄</div>
+    <div class="msg" id="emotionMsg">还没有记录，今天打牌了吗？</div>
+    <div class="sub-msg" id="emotionSub"></div>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="quick-stats">
+    <div class="quick-stat">
+      <div class="num" style="color:#e74c3c;" id="statWins">0</div>
+      <div class="label">🏆 赢</div>
+    </div>
+    <div class="quick-stat">
+      <div class="num" style="color:#555;" id="statLosses">0</div>
+      <div class="label">😤 输</div>
+    </div>
+    <div class="quick-stat">
+      <div class="num" style="color:#d4940b;" id="statRate">-</div>
+      <div class="label">📊 胜率</div>
+    </div>
+    <div class="quick-stat">
+      <div class="num" id="statNet" style="color:#333;">0</div>
+      <div class="label">💰 净盈亏</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('record')">📝 记一局</button>
+    <button class="tab" onclick="switchTab('history')">📋 历史</button>
+    <button class="tab" onclick="switchTab('reminder')">⏰ 约局</button>
+    <button class="tab" onclick="switchTab('summary')">📊 总结</button>
+  </div>
+
+  <!-- Record Tab -->
+  <div class="section active" id="sec-record">
+    <div class="card">
+      <h2>📝 刚才打得怎么样？</h2>
+
+      <div class="big-toggle" id="winLoseToggle">
+        <button class="btn-win" onclick="setResult('win', this)">
+          <span class="icon">🎉</span>赢了！
+        </button>
+        <button class="btn-lose" onclick="setResult('lose', this)">
+          <span class="icon">😤</span>输了
+        </button>
+      </div>
+
+      <div class="form-row">
+        <label>💰 金额（赢了多少 / 输了多少）</label>
+        <input type="number" id="recAmount" placeholder="比如 200" min="0" step="1">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:0.85em;font-weight:600;color:#777;margin-bottom:8px;">😊 打完心情怎么样？</label>
+        <div class="mood-pick" id="moodPick">
+          <button class="mood-btn" onclick="pickMood('😆', this)">😆<span>超开心</span></button>
+          <button class="mood-btn selected" onclick="pickMood('😊', this)">😊<span>还不错</span></button>
+          <button class="mood-btn" onclick="pickMood('😐', this)">😐<span>还行</span></button>
+          <button class="mood-btn" onclick="pickMood('😤', this)">😤<span>有点不爽</span></button>
+          <button class="mood-btn" onclick="pickMood('😭', this)">😭<span>很难过</span></button>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>📅 日期</label>
+        <input type="date" id="recDate">
+      </div>
+      <div class="form-row">
+        <label>💬 想说的话（可选）</label>
+        <textarea id="recNote" placeholder="比如：今天手气超好！或者：被对家杠上开花..."></textarea>
+      </div>
+      <button class="btn btn-save" onclick="saveRecord()">💾 记下来</button>
+    </div>
+  </div>
+
+  <!-- History Tab -->
+  <div class="section" id="sec-history">
+    <div class="card">
+      <h2>📋 对局记录</h2>
+      <div id="records"></div>
+    </div>
+    <!-- Streak -->
+    <div class="card" id="streakCard" style="text-align:center;">
+      <h2>📈 近期走势</h2>
+      <div class="streak-bar" id="streakBar"></div>
+    </div>
+  </div>
+
+  <!-- Reminder Tab -->
+  <div class="section" id="sec-reminder">
+    <div class="card">
+      <h2>⏰ 提醒她约局</h2>
+      <div class="form-row">
+        <label>📅 日期</label>
+        <input type="date" id="remDate">
+      </div>
+      <div class="form-row">
+        <label>🕐 时间</label>
+        <input type="time" id="remTime" value="19:00">
+      </div>
+      <div class="form-row">
+        <label>📍 地点 / 备注（可选）</label>
+        <input id="remNote" placeholder="比如：老地方三楼">
+      </div>
+      <button class="btn btn-remind" onclick="addReminder()">🔔 添加提醒</button>
+    </div>
+    <div class="card">
+      <h2>📋 提醒列表</h2>
+      <div id="reminders"></div>
+    </div>
+  </div>
+
+  <!-- Summary Tab -->
+  <div class="section" id="sec-summary">
+    <div class="card" id="trendCard">
+      <h2>📈 近期走势</h2>
+      <div id="trendChart"></div>
+    </div>
+    <div class="card" id="weekSummary">
+      <h2>📅 本周总结</h2>
+      <div id="weekContent"></div>
+    </div>
+    <div class="card" id="monthSummary">
+      <h2>📆 本月总结</h2>
+      <div id="monthContent"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="milestone-overlay" id="milestoneOverlay" style="display:none;">
+  <div class="milestone-card">
+    <div class="ms-emoji" id="msEmoji"></div>
+    <div class="ms-title" id="msTitle"></div>
+    <div class="ms-detail" id="msDetail"></div>
+    <button class="ms-btn" onclick="closeMilestone()">❤️ 知道了！</button>
+  </div>
+</div>
+
+<script>
+// ==================== DATA ====================
+const STORAGE_KEY = 'mj_her_records';
+const REM_KEY = 'mj_her_reminders';
+
+function getRecords() { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+function saveRecords(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+function getReminders() { return JSON.parse(localStorage.getItem(REM_KEY) || '[]'); }
+function saveReminders(data) { localStorage.setItem(REM_KEY, JSON.stringify(data)); }
+
+// ==================== EMOTION ENGINE ====================
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function computeEmotion() {
+  const records = getRecords();
+  if (records.length === 0) {
+    return {
+      emoji: '🀄',
+      msg: '这里还没有记录呢～今天搓麻将了吗？',
+      sub: '不管输赢，我都会在这里认真记下每一局。第一次记录，就从今天开始吧～把她的名字写在上面，然后骄傲地点下"赢了"或温柔地点下"输了" ❤️',
+      mood: 'neutral'
+    };
+  }
+
+  const last = records[0];
+  const wins = records.filter(r => r.result === 'win');
+  const losses = records.filter(r => r.result === 'lose');
+  const total = records.length;
+  const winRate = wins.length / total;
+  const totalNet = records.reduce((s, r) => s + (r.result === 'win' ? r.amount : -r.amount), 0);
+
+  // Current streak
+  let currentStreak = 0;
+  for (const r of records) {
+    if (r.result === last.result) currentStreak++;
+    else break;
+  }
+
+  // Previous streak (opposite result before current streak)
+  let prevStreak = 0;
+  let prevType = last.result === 'win' ? 'lose' : 'win';
+  for (let i = currentStreak; i < records.length; i++) {
+    if (records[i].result === prevType) prevStreak++;
+    else break;
+  }
+
+  // Recent 5 form
+  const recent5 = records.slice(0, Math.min(5, records.length));
+  const recentWins = recent5.filter(r => r.result === 'win').length;
+
+  // ============ WIN ============
+  if (last.result === 'win') {
+
+    // --- First win ever ---
+    if (wins.length === 1 && total === 1) {
+      return {
+        emoji: '🎊',
+        msg: pick([
+          '开门红！！！第一局就赢了！！你知道这意味着什么吗？意味着从今天开始，你的麻将生涯有一个闪闪发光的起点！这是个超级好兆头，以后回想起来都会觉得很甜 ✨',
+          '首战告捷！！第一局就拿下了，这不叫运气好，这叫天赋型选手实锤了！以后每一局都会带着今天这股利落劲儿，一路顺风顺水 🏆',
+          '第一局就赢！！我跟你说，很多人打了好久才赢第一局，你上来就拿下，这是牌运在给你发信号呢——"以后跟着我混，保你吃香的喝辣的" 🀄',
+        ]),
+        sub: pick([
+          '今天是个值得纪念的日子，以后回头看，这就是王者的起点。记得截图保存，若干年后拿出来吹："看到没，老娘第一局就赢了！"📸',
+          '好的开始是成功的一半，但我感觉你的成功远不止一半～这只是一个序幕，后面还有无数场胜利排着队等你翻牌子呢 💫',
+          '我已经帮你准备好长篇大论吹彩虹屁了，结果第一局就要开始吹，这以后还怎么收敛啊 😂 算了不收敛了，你值得！',
+        ]),
+        mood: 'win'
+      };
+    }
+
+    // --- 100% win rate so far ---
+    if (total >= 3 && wins.length === total) {
+      return {
+        emoji: '👑',
+        msg: pick([
+          `我要疯了！！${total}战全胜！！一场都没输过！！这是什么概念？这就是麻将界的灭霸，打个响指对手就没了。我现在严重怀疑你是不是偷偷拜了什么麻将之神 👑`,
+          `不败金身！！${total}场全胜纪录！！这已经不能用"运气好"来解释了，这是实力、气场、手感的完美三位一体。你的对手们现在应该在偷偷建群讨论怎么针对你 😂`,
+          `${total}战${total}胜，百分之百胜率。讲真，你这个战绩放到职业比赛里都属于离谱级别的。我现在说话都不敢太大声，怕吵到你身上的雀神光环 ✨`,
+        ]),
+        sub: pick([
+          '说实话我已经不知道该怎么夸了，再夸下去字典里的褒义词都要被我用完了。你就继续保持吧，让这个不败纪录一直延续下去，看看到底谁能终结你——反正我押"没有人" 🤷',
+          '全胜纪录这种东西，以后回想起来是可以吹一辈子的。但你不需要吹，因为你的实力别人都看在眼里，怕在心里 😏',
+          '我现在开始担心一件事：万一你以后输了一局，我会不会因为落差太大而崩溃...算了不想了，反正你今天又赢了！🎉',
+        ]),
+        mood: 'win'
+      };
+    }
+
+    // --- Mega win (>=800) ---
+    if (last.amount >= 800) {
+      return {
+        emoji: '🤑',
+        msg: pick([
+          `疯了疯了！！赢了 ${last.amount}！！这不叫赢钱，这叫抢劫麻将馆！！今晚的你就是财神爷附体，摸什么来什么，对手的钱包直接被你清空。我现在打字的手都在抖 💰`,
+          `暴击！！+${last.amount}！！我敢说今晚你睡觉都会笑醒。这个数字已经不是"赢一局"的概念了，这是"赢了一周的生活费"。你上辈子是不是救过财神爷的命？？🤑`,
+          `${last.amount}入账！！我帮你算算啊，这够吃好几顿大餐、买一件很贵的衣服、再存一笔快乐基金。今天这场麻将打得太值了，性价比直接拉满！`,
+        ]),
+        sub: pick([
+          '恭喜恭喜恭喜！重要的事情说三遍！这种级别的胜利必须好好庆祝，不是"要不要庆祝"的问题，是"怎么庆祝才配得上这场胜利"的问题。想吃什么？想去哪玩？今天你做主！🎉',
+          '我跟你说，赢大钱的时候最幸福的事不是数钱，是她数钱时候那个笑容。那个笑比赢的钱珍贵一万倍 ❤️',
+          '温馨提示：今天赢这么大，下次约局的时候对手可能会瑟瑟发抖。建议你穿得低调一点，不要太嚣张——虽然你完全有资格嚣张 😎',
+        ]),
+        mood: 'win'
+      };
+    }
+
+    // --- Big win (>=400) ---
+    if (last.amount >= 400) {
+      return {
+        emoji: '💎',
+        msg: pick([
+          `大获全胜！+${last.amount}！今天这场打得漂亮！该碰就碰，该杠就杠，该胡就胡，行云流水一气呵成。看吧，我就知道你的实力摆在那里，赢钱只是时间问题 💃`,
+          `漂亮！！+${last.amount}！！今天的手感、牌运、判断力全部在线，这叫什么？这叫"人牌合一"。当一个人和麻将产生了灵魂共鸣，就是这个效果 ✨`,
+          `含金量拉满的一场胜利！+${last.amount} 入袋！不是赢一点点，是大赢特赢！这种级别的胜利最让人开心了，既不会少到没感觉，又足够让你今天一整天心情灿烂 ☀️`,
+        ]),
+        sub: pick([
+          '她今天说想吃什么，就带她去吃，不要犹豫。赢钱的人值得被优待，更何况她本来就值得 😌',
+          '我观察到一件事：每次你认真打的时候，结果都不会差。今天就是最好的证明。不是运气好，是你打得好 💯',
+          '这种级别的胜利最舒服了——赢得多到让人开心，又不至于让对手太肉疼（虽然他们可能还是有点疼）。完美的社交型胜利 😏',
+        ]),
+        mood: 'win'
+      };
+    }
+
+    // --- Long win streak (5+) ---
+    if (currentStreak >= 5) {
+      return {
+        emoji: '🔥',
+        msg: pick([
+          `${currentStreak}连胜！！我的天！！你已经连续赢了${currentStreak}局了！！这是什么概念？这意味着最近${currentStreak}次坐上牌桌，每一次都是你笑到最后。你的对手们现在来打麻将之前应该都在做心理建设 😂🔥`,
+          `第${currentStreak}局连胜！！火！热！发！烫！你的手现在就是传说中的"金手指"，摸到什么牌都能变成好牌。我建议你去买张彩票，这个运气不能浪费 🔥`,
+          `${currentStreak}连胜中！！我已经找不到合适的词汇来形容你现在有多猛了。反正就是：你往牌桌上一坐，对手的内心OS就是"完了完了她又来了" 💀`,
+        ]),
+        sub: pick([
+          '连胜的感觉是不是特别好？希望你记住这种感觉——自信、从容、无所畏惧。即使以后偶尔断了连胜，这种感觉也会帮你找回状态 💪',
+          '悄悄提醒：连胜期间有几个玄学注意事项——不要换座位、不要换衣服、不要剪指甲。不是迷信，是尊重运势！😄',
+          '说真的，连胜到这种程度，已经不是"状态好"能解释的了。这就是你的实力+心态的完全体。继续保持，我帮你数着下一局！📊',
+        ]),
+        mood: 'win'
+      };
+    }
+
+    // --- Win streak 3-4 ---
+    if (currentStreak >= 3) {
+      return {
+        emoji: '⚡',
+        msg: pick([
+          `连赢${currentStreak}局了！状态正在火热上升期！你知道这种感觉吗？就像开车上了高速，一路畅通，油门都不用松。你的气势已经压过了牌桌，对手只能看着你表演 🔥`,
+          `${currentStreak}连胜！势头正好！最近这几场打下来，感觉你已经完全找到了自己的节奏。该进攻的时候不犹豫，该防守的时候稳得住，高手风范十足 ✨`,
+          `${currentStreak}局连胜，手感热得发烫！现在的你就是牌桌上最有底气的那个人，因为你知道自己有实力赢，而且你真的能赢。自信的女人最美丽 💃`,
+        ]),
+        sub: pick([
+          '连胜期间最大的敌人不是对手，是骄傲。但我觉得你完全不用担心这个，因为你天生就是又强又低调的那种人。继续保持！💫',
+          '给你一个真诚的建议：趁着连胜，多约几场！好手感是会过期的，要趁热打铁。你的对手们最近应该不太想接你的局，但你可以热情一点邀请他们 😏',
+          '有一种人叫"越打越顺"，说的就是你。从牌感、手速、判断力到心态，全部在线。希望这个状态永远保持下去～',
+        ]),
+        mood: 'win'
+      };
+    }
+
+    // --- Comeback: won after 2+ losing streak ---
+    if (prevStreak >= 2) {
+      return {
+        emoji: '💪',
+        msg: pick([
+          `绝地反击！！之前连输${prevStreak}局的阴霾，今天一扫而空！！我就知道你不会一直被压着打的，你从来就不是那种轻易认输的人。这一场胜利比连胜还让人开心，因为它证明了你的韧性 💪`,
+          `来了来了！反弹来了！！${prevStreak}连败之后的第一场胜利！你知道这说明什么吗？说明霉运已经到头了，好运重新接上了。触底之后的方向只有一个——向上 📈`,
+          `漂亮！！断了${prevStreak}连败！！之前那些输的，就当是在给今天攒运气。事实证明，运气这东西不会一直偏心的，该来的总会来。你今天赢的不仅是钱，更是一口气！`,
+        ]),
+        sub: pick([
+          '你知道她最厉害的地方是什么吗？不是牌技，是心态。输了不气馁，赢了不张扬。这种人在牌桌上是最可怕的对手，也是最可靠的朋友 💫',
+          '经历过低谷的胜利，比一路顺风的胜利更甜。因为你知道自己不是靠运气在赢，而是靠调整能力在赢。这才是真正的高手素养 🧘‍♀️',
+          '这个反弹来得太及时了！之前的连败就当是给麻将之神交的保护费，现在保护费交够了，好运自然就来了。接下来只会越来越好～',
+        ]),
+        mood: 'win'
+      };
+    }
+
+    // --- Won after a single loss ---
+    if (prevStreak === 1) {
+      return {
+        emoji: '✨',
+        msg: pick([
+          '看！赢回来了吧！上一局的失利根本影响不了你。输了就输了，下一局赢回来就好了，就这么简单。你的调整能力就是这么强，不需要任何过渡期 ✨',
+          '漂亮的反弹！上一局只是运气打了个盹，这一局运气醒了，你也醒了。输一局赢一局，波浪式前进，这就是高手该有的节奏 🌊',
+          '把上一局的失利甩在身后了！我就说嘛，实力摆在那里，输一局两局的根本不算什么。今天这场胜利就是最好的证明 💫',
+        ]),
+        sub: pick([
+          '胜不骄败不馁，这六个字说起来容易做起来难，但你做到了。这种心态不只适用于麻将，也适用于生活中的所有事 🧘‍♀️',
+          '一输一赢的节奏其实挺好的——输了让你保持清醒，赢了让你保持信心。完美的平衡状态 ⚖️',
+        ]),
+        mood: 'win'
+      };
+    }
+
+    // --- Win rate >= 70% with 5+ games ---
+    if (total >= 5 && winRate >= 0.7) {
+      return {
+        emoji: '🌟',
+        msg: pick([
+          `又赢了！你的胜率现在是${(winRate*100).toFixed(0)}%，打了${total}局赢了${wins.length}局。这个数据放到任何一个麻将群里都是相当炸裂的存在。你不是来打麻将的，你是来收割胜场的 🌟`,
+          `常规操作～${total}局${wins.length}胜，胜率${(winRate*100).toFixed(0)}%。数据不会说谎，你就是这个牌桌上最强的存在。别人打麻将是"碰运气"，你打麻将是"收租子" 😎`,
+          `${(winRate*100).toFixed(0)}%的胜率！这个数字什么概念？就是你打三局赢两局还多。你的对手们每次坐下来，其实已经在心理上输了三分 📊`,
+        ]),
+        sub: pick([
+          '实力型选手的日常：坐下来，摸牌，赢，收工。这种数据不是靠运气堆出来的，是靠每一局认真的判断和决策换来的。你值得这个胜率 💯',
+          '希望你可以为自己的战绩感到骄傲。不管别人怎么说，数据就在这里，你的实力谁都不能否认 ✨',
+        ]),
+        mood: 'win'
+      };
+    }
+
+    // --- Normal win ---
+    return {
+      emoji: pick(['😎', '🎉', '✨', '🥳', '💖', '🌸', '💝', '🌟']),
+      msg: pick([
+        '又赢了！每次你赢的时候我都在想，这世界上怎么会有运气和实力同时在线的人啊。今天这场赢得干净利落，给你点赞 👍',
+        '稳稳的幸福！一场漂亮的胜利到手。看你赢钱的样子，就知道今天一定是个好日子。赢的不只是钱，还有好心情 🌸',
+        '拿下拿下！熟悉的配方，熟悉的味道——你赢了，对手输了，世界和平了。这就是最好的结局 😌',
+        '赢啦！今天这场麻将打得值，既锻炼了脑力、又愉悦了心情、还充实了钱包，一举三得。这才是高质量娱乐的正确打开方式 ✨',
+        '又一场胜利入账！我觉得你的麻将水平已经进入了"稳定输出"阶段，不会大起大落，就是踏踏实实地赢。这种状态最让人安心 💫',
+        '日常赢一局，淡定收工。不是每一场胜利都需要敲锣打鼓，但这种稳稳的幸福，才是最让人舒服的。为你开心 💖',
+        '赢钱快乐！我今天当你的专属播报员，大声宣布：这局，你赢了！而且赢得理直气壮！不是因为运气好，是因为打得好 🎉',
+        '又双叒叕赢了！我已经习惯了这个频率，但我不会厌倦夸你。每一场胜利都值得被记录、被欢呼、被庆祝 🥂',
+      ]),
+      sub: pick([
+        '给你一个真诚的小建议：今晚犒劳一下自己，不用太隆重，一杯奶茶、一份甜品、一集喜欢的剧，都可以。赢钱的人值得被这个世界温柔对待 🧋',
+        '希望你的好心情能持续一整天。赢钱只是锦上添花，真正让人开心的是那种"我今天状态很好"的满足感。你做到了 ✨',
+        '我发现你赢的时候整个人都在发光。不是赢钱的问题，是那种自信和从容，特别迷人。希望你天天都有这种感觉 💝',
+        '把钱存进"快乐基金"吧，攒够了一定数目就拿出来奖励自己一件喜欢了很久的东西。这是你应得的 🎁',
+        '继续保持这股势头！好运是有磁场的，赢了会吸引更多的赢。就像滚雪球一样，越滚越大 ❄️',
+        '你的存在本身就是我坚持记录的动力。看到你开心，比什么都值。继续赢下去吧，我帮你记着每一个高光时刻 📝',
+        '今天的心情：晴 ☀️。不是因为天气好，是因为你赢了。希望你每天都像今天一样闪闪发光 ✨',
+        '赢钱的快乐 + 被记录的仪式感 = 完美的麻将体验。我会一直在这里，记下你每一场漂亮的胜利 💕',
+      ]),
+      mood: 'win'
+    };
+  }
+
+  // ============ LOSE ============
+  if (last.result === 'lose') {
+
+    // --- First game ever, lost ---
+    if (total === 1) {
+      return {
+        emoji: '🤗',
+        msg: pick([
+          '第一局而已，真的没关系！你知道吗，很多麻将高手第一局都是输的，因为新手保护期这种东西根本不存在，反而是新手考验期。你过了这关，后面全是上坡路 💪',
+          '首战小负，但这算什么？这只是漫长麻将生涯中的第一页，后面还有无数页等着你去书写。没有人会因为第一局的失利而否定什么，更何况你只是运气没到位而已 🎬',
+          '第一局就当熟悉规则和手感了！你的实力我很清楚，这局输了纯粹是因为麻将之神还没来得及认识你。等它认识你了，就会天天站在你这边 🍀',
+        ]),
+        sub: pick([
+          '先苦后甜是宇宙真理。第一局输了，后面的胜利才会更让人珍惜、更有成就感。我帮你记着，以后回头看的时候你会发现：还好第一局输了，不然都不知道自己后来有多厉害 😌',
+          '别往心里去。这就像刚学走路摔了一跤，一点都不丢人，反而是成长的必经之路。你的麻将之路才刚刚开始，好戏在后面 📖',
+        ]),
+        mood: 'lose'
+      };
+    }
+
+    // --- Mega loss (>=800) ---
+    if (last.amount >= 800) {
+      return {
+        emoji: '😤',
+        msg: pick([
+          `天……输了 ${last.amount}。首先我要大声说一句：这不是你的问题！今天这个牌运放在谁身上都扛不住，纯属麻将之神今天请假了，换了个临时工代班。你已经打得很好了，真的 😤`,
+          `${last.amount}没了，确实有点肉疼。但你知道吗？钱这东西，花掉的和输掉的，过两年回头看都是一个感觉：不重要。重要的是你今天依然是自己、依然可爱、依然值得被好好对待 🫂`,
+          `大出血 ${last.amount}……我知道输了肯定不开心，但请允许我说一句话：这笔钱就当是捐给了"社会和谐基金会"，让赢的人开心了，你也积了德。下次轮到别人捐给你 💸`,
+        ]),
+        sub: pick([
+          '破财消灾，破财消灾，破财消灾。重要的话说三遍。今天损失的钱，都会变成未来的好运以另一种方式回来。这是玄学，但玄学有时候就是要信的 🔮',
+          '首先深呼吸，然后我们去吃点好的。火锅、烤肉、奶茶，三选一或者全选。先用食物把心情拉回来，其他的明天再说 🍲',
+          '说真的，输大钱的时候最需要的不是分析牌局，是一顿好吃的和一个温暖的抱抱。你已经很棒了，今天只是运气不在你这边。我陪你一起等好运回来 ☀️',
+          '记住一句话：输大的之后必赢大的。这是麻将圈的铁律，比牛顿定律还准。你的好运已经在路上了，快递单号都生成好了 📦',
+        ]),
+        mood: 'lose'
+      };
+    }
+
+    // --- Big loss (>=400) ---
+    if (last.amount >= 400) {
+      return {
+        emoji: '💔',
+        msg: pick([
+          `输了 ${last.amount}，说实话有一点点心疼。但是转念一想，钱只是换了一种方式存在——从你的钱包里溜达出去，在别人的钱包里暂住几天，过几天就回来了。真的，它只是出去旅游了 😅`,
+          `${last.amount}的损失，说不在意是假的，但说看不开也是假的。你打麻将不是为了赢钱，是为了开心。只要打的过程中你是享受的，输赢都是值得的 💕`,
+          `今天牌运确实没站你这边，${last.amount}就这么没了。但你知道吗？你的气场依然两米八，输钱不输阵。下一局见到你，对手还是要抖三抖 👑`,
+        ]),
+        sub: pick([
+          '输钱的正确疗愈流程：第一步，吃点甜的；第二步，看点好笑的；第三步，睡一觉。明天醒来就是新的一天，运气也是新的 ☀️',
+          '今晚别让你做任何家务，别让你操心任何事。你只管休息、放松、做让自己开心的事。其他的我来 🥰',
+          '这笔钱换个角度想：你请几个朋友玩了几个小时的麻将，还附赠了情绪价值。花几百块买到这些，其实不算亏 😌',
+        ]),
+        mood: 'lose'
+      };
+    }
+
+    // --- Long losing streak (5+) ---
+    if (currentStreak >= 5) {
+      return {
+        emoji: '🥺',
+        msg: pick([
+          `${currentStreak}连败……我知道你现在可能不想看这个数字，但我必须说：这绝对绝对绝对不是实力的锅！这是概率论里那个极小概率事件偏偏被你碰上了。就像抛硬币连续${currentStreak}次反面，这不是你的手有问题，是运气在搞行为艺术 🎭`,
+          `第${currentStreak}局失利，这个连败纪录可以载入史册了——不是作为耻辱，是作为"最离谱运气低谷"的纪念。将来你连赢的时候，这段经历会是最有说服力的对比素材 📉`,
+          `${currentStreak}连败了……我先替你骂一句：这运气也太离谱了吧！！好了骂完了，现在冷静下来说：任何人遇到这种运气低谷都会这样，你不是一个人。无数麻将高手都有过类似经历，后来他们都翻身了 ✨`,
+        ]),
+        sub: pick([
+          '是时候启动一级转运预案了！具体措施包括但不限于：换一件红色衣服、洗手的时候多搓几下、进门前先左脚跨进去、以及——暂时别算账了，先享受打牌本身 🧧',
+          '听我说，连败是最考验心态的时候，但也是最不值得怀疑自己实力的时候。运气是随机的，你的技术是实打实的。等霉运走了，你的技术会证明一切 💪',
+          '给你讲个故事：我认识的每一个麻将高手，都有一段"惨不忍睹"的低谷期。但后来回头看，那些低谷只是为了让后面的高峰显得更高。你的高峰马上就来了 📈',
+          '连败的时候千万别做的事：换打法、质疑自己、看牌谱找原因。该做的事：吃好吃的、睡个好觉、跟让你开心的人聊天。相信我，心态回来了，运气也就回来了 🍀',
+        ]),
+        mood: 'lose'
+      };
+    }
+
+    // --- Losing streak 3-4 ---
+    if (currentStreak >= 3) {
+      return {
+        emoji: '😢',
+        msg: pick([
+          `${currentStreak}连败了，该给你的牌运充充电了。就像手机没电了要插充电器一样，运气用完了也需要补充。充电方式：休息、放松、做一切和麻将无关的开心事 🔋`,
+          `连输${currentStreak}局，我知道这种感觉不好受。但请相信我，这只是一个小小的低潮期，就像大海有涨潮落潮一样，你的牌运也在自然地起伏。落潮之后，一定是涨潮 🌊`,
+          `${currentStreak}连败听起来有点吓人，但换一个角度想：你只是在给未来的连赢攒人品。现在的每一局失利，都是未来胜利的"首付"。等你连赢的时候会发现，这些付出都是值得的 🌱`,
+        ]),
+        sub: pick([
+          '现在的你需要的不是一个牌局分析师，而是一个能陪你散步、吃零食、聊八卦的人。把麻将暂时放下，去做一些能让你嘴角自动上扬的事 🎬',
+          '给你准备了几个转运小妙招：洗牌的时候多洗几下、抓牌前深呼吸三次、在心里默念"我可以的"。不保证有效，但保证让你看起来特别专业 😄',
+          '你要相信自己，比我想相信你还要相信。你的实力一直都在，只是运气暂时跑到别人那边度假去了。它度假回来的时候，就是你翻盘的时候 🏖️',
+          '连败期间最珍贵的不是赢回来的钱，是有人一直陪在你身边说"没关系的"。我就是那个人，所以——没关系的 💕',
+        ]),
+        mood: 'lose'
+      };
+    }
+
+    // --- Lost after a long win streak (3+) ---
+    if (prevStreak >= 3) {
+      return {
+        emoji: '😌',
+        msg: pick([
+          `深呼吸，想想你之前那${prevStreak}连胜的光辉岁月。赢了那么多局才输一局，这个性价比已经高到离谱了好吗？这一局不是什么失败，是给对手的一点人文关怀——让他们也开心一下 😏`,
+          `${prevStreak}连胜之后的第一场失利，说真的，这太正常了。没有人可以一直赢，就像没有人可以一直晴天。雨后才有彩虹，这一局失利只是让你的记录更有人情味 🌈`,
+          `之前连赢${prevStreak}局的时候你不记得了？那我现在帮你回忆：那${prevStreak}局你有多猛，这一局就有多无所谓。偶尔输一场不叫输，叫"中场休息"或者"对手体验日" ☕`,
+        ]),
+        sub: pick([
+          '你之前的连胜已经充分证明了你的实力。这一局只是运气偶尔掉线，不是技术问题。下次上线的时候，一切都会恢复正常的 💫',
+          '有一种"输"叫"战略性调整"，有一种"败"叫"给对手面子"。你这局两者都占了，格局很大，我很佩服 😌',
+        ]),
+        mood: 'lose'
+      };
+    }
+
+    // --- Overall still positive (net > 0, winRate >= 50%) ---
+    if (totalNet > 0 && winRate >= 0.5) {
+      return {
+        emoji: '😊',
+        msg: pick([
+          '输一局而已，把账本翻开一看——总账还是大红的！这就好比你钱包里有1000块，今天花了100块，虽然有点心疼，但你依然是富有的。眼光放长远，你的战绩非常漂亮 📊',
+          '小输一局，不影响大局。你的总战绩依然是盈利的，胜率依然在50%以上。这一小片乌云挡不住你整片晴空。看看总盈亏那个绿色的数字，那才是真相 ☀️',
+          '偶尔输一场就是给麻将生活加点调味料。一直赢多无聊啊，偶尔的小失利让你的战绩看起来更真实、更有故事性。而且最重要的是——你还是赚的 💰',
+        ]),
+        sub: pick([
+          '我帮你看看数据：总盈亏是正的，胜率也在线。这一局输的金额在历史长河里就是一朵小浪花。继续做你自己就好了，数据会越来越好看的 📈',
+          '总账为正就是硬道理。今天这场就当是请朋友喝了个下午茶，而你的"收入"那一栏依然比你"支出"那一栏好看得多 ☕',
+        ]),
+        mood: 'lose'
+      };
+    }
+
+    // --- Won the previous game (just a blip) ---
+    if (prevStreak >= 1 && last.result === 'lose' && records.length >= 2 && records[1].result === 'win') {
+      return {
+        emoji: '🍃',
+        msg: pick([
+          '刚赢完输一局，这是最正常的节奏了。赢一局输一局，像呼吸一样自然。你的实力在上一局已经证明过了，这一局只是运气打了个盹。下一局它醒了，你就又赢了 🌊',
+          '没什么大不了！上一局的胜利还热乎着呢。一赢一输、一起一伏，这才是麻将的本来面目。如果每次都赢，那麻将就不是麻将了，是提款机 😄',
+          '你看这个节奏：赢→输→赢→输→赢赢赢。这叫"波浪式前进，螺旋式上升"。短期看有波动，长期看你在一直往上走。这才叫高手 📈',
+        ]),
+        sub: pick([
+          '她的实力上一局已经展示过了，这一局不影响总体判断。就像一道好菜偶尔咸了一点点，不影响它是好菜 🍳',
+          '有赢有输才是真实的麻将人生，起起落落才让每一场胜利都更有意义。重要的是她在这个过程中是开心的 🥰',
+        ]),
+        mood: 'lose'
+      };
+    }
+
+    // --- Normal loss ---
+    return {
+      emoji: pick(['🤗', '💕', '🍀', '🥰', '🌸', '🫂', '💝', '🌷']),
+      msg: pick([
+        '输了一局而已，没什么大不了的。运气这东西跟天气一样，今天下雨不代表天天下雨。你的实力是一直在的，只是今天的牌恰好不太听话 ☔',
+        '今天牌运不在你这边，但没关系。你打麻将的样子一定还是很从容、很优雅。输赢只是结果，过程中的你才是最迷人的部分 ✨',
+        '输了呀～但是你知道吗，每一局"输"都是在为下一局"赢"攒人品。你的好运银行里，存款又多了。下次提出来的时候就会连本带利 🍀',
+        '小输不算输，只是赢得不那么明显。我今天宣布：虽然账面上你输了，但在"最可爱牌手"排行榜上你依然是第一 🥇',
+        '没关系没关系没关系！重要的不是这一局的输赢，而是你今天坐在牌桌上享受了那个过程。打麻将的本质是快乐，赢了是双倍快乐，输了也是快乐，只是单倍 😌',
+        '风水和运气都会轮流转，今天转到别人那边，明天就转回来了。你只要做一件事：保持你的打法和心态，剩下的交给时间 💫',
+        '输了这一局没什么的。想想你打麻将是为了什么？是为了那几个小时的专注和放松，是为了和朋友在一起的时光。钱进进出出很正常，但那个过程是独属于你的 💝',
+        '今天运气不好不是你的错。你看那些职业选手也有输的时候，更何况我们打的是娱乐麻将。开心最重要，其他的都是附加项 🌷',
+      ]),
+      sub: pick([
+        '今晚的正确打开方式：不要复盘（相信我，输牌复盘只会越想越气），直接切换到"享受模式"——喜欢的剧、好吃的零食、舒服的沙发。明天又是新的一天 ☀️',
+        '安慰她的最佳方式不是"别难过了"，而是"走，去吃你最喜欢的"。食物是最好的情绪疗愈师，比任何道理都好使 🍜',
+        '我建议今天暂时屏蔽一切和麻将有关的信息，改看一些搞笑的综艺或者萌宠视频。让大脑换个频道，明天就会觉得今天这点事根本不叫事 📺',
+        '给她泡一杯热茶或者热可可，让她握着温热的杯子发一会儿呆。有时候人不缺道理，就缺一个温暖的瞬间。你给她那个瞬间就够了 ☕',
+        '帮她回忆一下她赢大钱的那几次——不是为了比较，而是为了提醒她：你看，你是能赢的，而且赢得很漂亮。这次只是暂时的停顿，不是终局 🎞️',
+        '如果她想聊聊这局麻将，就听她说，你想说"运气不好"就说，想说"那手牌根本没法打"也支持。如果她不想聊，就安静地陪着她。陪伴本身就是最好的安慰 🩷',
+        '去便利店买她最爱吃的零食吧，不用太贵，就那种她看到会眼睛一亮的小东西。快乐有时候很简单，就是一包薯片、一盒冰淇淋或者一颗糖 🍬',
+        '不管今天输了多少钱，永远不要忘了：她的存在就已经是最大的幸运了。输赢在麻将桌上很重要，但在人生里一点都不重要。你已经有了最重要的东西 💕',
+      ]),
+      mood: 'lose'
+    };
+  }
+
+  return {
+    emoji: '🀄',
+    msg: '战绩已记录，一切都在按部就班地前进着。',
+    sub: '每一局麻将都是一小段人生，有起有落，有笑有叹。重要的不是结果，是你在牌桌上度过的那些专注又放松的时光。明天又是新的一局～ ✨',
+    mood: 'neutral'
+  };
+}
+
+function updateEmotionBanner() {
+  const e = computeEmotion();
+  const banner = document.getElementById('emotionBanner');
+  banner.className = 'emotion-banner ' + e.mood;
+  document.getElementById('emotionEmoji').textContent = e.emoji;
+  document.getElementById('emotionMsg').textContent = e.msg;
+  document.getElementById('emotionSub').textContent = e.sub;
+}
+
+// ==================== QUICK STATS ====================
+function updateQuickStats() {
+  const records = getRecords();
+  const wins = records.filter(r => r.result === 'win').length;
+  const losses = records.filter(r => r.result === 'lose').length;
+  const total = records.length;
+  const net = records.reduce((s, r) => s + (r.result === 'win' ? r.amount : -r.amount), 0);
+  const rate = total > 0 ? ((wins / total) * 100).toFixed(0) + '%' : '-';
+
+  document.getElementById('statWins').textContent = wins;
+  document.getElementById('statLosses').textContent = losses;
+  document.getElementById('statRate').textContent = rate;
+  const netEl = document.getElementById('statNet');
+  netEl.textContent = net >= 0 ? '+' + net : net;
+  netEl.style.color = net > 0 ? '#e74c3c' : net < 0 ? '#555' : '#333';
+}
+
+// ==================== TAB SWITCHING ====================
+function switchTab(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'history') { renderHistory(); renderStreak(); }
+  if (name === 'reminder') renderReminders();
+  if (name === 'summary') renderSummaries();
+}
+
+// ==================== TOAST ====================
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ==================== RECORD ====================
+let currentResult = null;
+let currentMood = '😊';
+
+function setResult(result, btn) {
+  currentResult = result;
+  document.querySelectorAll('#winLoseToggle button').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function pickMood(mood, btn) {
+  currentMood = mood;
+  document.querySelectorAll('#moodPick .mood-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function saveRecord() {
+  if (!currentResult) { toast('😊 先告诉我——今天赢了吗？'); return; }
+  const amount = parseInt(document.getElementById('recAmount').value) || 0;
+  if (amount <= 0) { toast('💰 填一下金额吧，多少都值得记下来～'); return; }
+  const date = document.getElementById('recDate').value || new Date().toISOString().split('T')[0];
+  const note = document.getElementById('recNote').value.trim();
+
+  const records = getRecords();
+  const oldTotal = records.length;
+  const oldWins = records.filter(r => r.result === 'win').length;
+
+  records.unshift({
+    id: Date.now(),
+    result: currentResult,
+    amount,
+    date,
+    note,
+    mood: currentMood
+  });
+  saveRecords(records);
+
+  // Clear form
+  currentResult = null;
+  currentMood = '😊';
+  document.querySelectorAll('#winLoseToggle button').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('#moodPick .mood-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelector('#moodPick .mood-btn:nth-child(2)').classList.add('selected');
+  document.getElementById('recAmount').value = '';
+  document.getElementById('recNote').value = '';
+
+  updateEmotionBanner();
+  updateQuickStats();
+
+  // --- Milestone check ---
+  const newTotal = records.length;
+  const newWins = records.filter(r => r.result === 'win').length;
+  const milestone = checkMilestone(oldTotal, newTotal, oldWins, newWins, records, currentResult, amount);
+
+  if (milestone) {
+    showMilestone(milestone);
+    toast('🏆 里程碑解锁！');
+  } else {
+    // Fun toast
+    if (currentResult === 'win') {
+      const toasts = [
+        '🎉 记下了！今天她是MVP！',
+        '✨ 赢啦！离雀神又近了一步～',
+        '🏆 漂亮！战绩+1，快乐+10086',
+        '💎 又收米了！她的笑容是最好的奖励',
+        '🌟 胜局已录入，好运请签收～',
+        '🎊 恭喜恭喜！她值得所有的胜利',
+        '🥳 赢钱快乐！她的实力从不让人失望',
+        '💖 记录了一场漂亮的胜利！',
+      ];
+      toast(pick(toasts));
+    } else {
+      const toasts = [
+        '🤗 记下了，快去抱抱她吧',
+        '💪 没关系，下次一定赢回来！',
+        '🍀 运气守恒定律：这局输了下局赢',
+        '💕 输了也是宝贝，记录员永远站她这边',
+        '🫂 已记录，附带一个隔空拥抱～',
+        '🌸 风雨过后是彩虹，输牌过后是连赢',
+        '😤 一定是牌的问题，不是她的问题！',
+        '🍫 建议立即投喂她最爱的零食',
+      ];
+      toast(pick(toasts));
+    }
+  }
+}
+
+// ==================== MILESTONES ====================
+function checkMilestone(oldTotal, newTotal, oldWins, newWins, records, lastResult, lastAmount) {
+  // Helper: current streak
+  let streak = 0;
+  for (const r of records) {
+    if (r.result === lastResult) streak++;
+    else break;
+  }
+
+  const net = records.reduce((s, r) => s + (r.result === 'win' ? r.amount : -r.amount), 0);
+
+  // Game count milestones
+  const gameMilestones = {
+    1: { emoji: '🎊', title: '第一局！', detail: '你的专属麻将日记，从今天正式开始。以后的每一局，无论输赢，都会在这里被温柔地记录下来。这是起点，也是未来所有回忆的第一页。' },
+    10: { emoji: '🔟', title: '第10局达成！', detail: '已经打了10局麻将了！从第一局的生涩到现在的从容，你一定感觉到了自己的进步。这个小小的里程碑，证明你不是三天打鱼两天晒网，而是真的热爱这门"手艺"。继续保持！' },
+    50: { emoji: '🎯', title: '第50局！', detail: '五十局！这是一个值得骄傲的数字。想想这50局里你经历过的胜利和失败、开心和沮丧，每一局都是你自己的故事。你已经是这个圈子里最有毅力的人了！' },
+    100: { emoji: '💯', title: '破百了！！', detail: '100局！！这个数字放在哪里都是硬核玩家的象征。100局里你笑过、叹过、赢过、输过，但最重要的是——你一直在享受这个过程。致敬100局的你，后面还有更多精彩在等着！' },
+  };
+  if (gameMilestones[newTotal]) return gameMilestones[newTotal];
+
+  // Win count milestones
+  const winMilestones = {
+    1: { emoji: '🏆', title: '首胜！', detail: '第一场胜利！这是一个历史性的时刻。以后的每一场胜利都会让你想起今天——原来赢的感觉这么好。记住这个感觉，它会是你低谷时最好的强心剂。' },
+    5: { emoji: '🌟', title: '第5胜！', detail: '已经拿下5场胜利了！从第一胜到现在，你的赢球方式越来越多样，心态也越来越稳定。5胜不是终点，是成为高手路上的第一个路标。' },
+    10: { emoji: '💎', title: '第10胜！', detail: '十胜达成！两位数了！这说明你不是偶尔运气好，而是真的有实力在牌桌上立足。10场胜利背后的经验，是任何书本都教不了的东西。' },
+    20: { emoji: '👑', title: '第20胜！！', detail: '二十场胜利！这个数字意味着你已经是一个值得被认真对待的对手了。没有人会小看你，因为你用20场实打实的胜利证明了自己。' },
+    50: { emoji: '🔥', title: '50胜！！', detail: '五十胜！！你已经不是"会打麻将"了，你是"很会打麻将"。五十场胜利积累的经验和直觉，让你在牌桌上有了别人学不来的从容和自信。' },
+  };
+  if (winMilestones[newWins] && newWins > oldWins) return winMilestones[newWins];
+
+  // Streak milestones
+  if (streak === 5 && lastResult === 'win') return { emoji: '⚡', title: '五连胜！！', detail: '连续五场，你都是最后的赢家。对手们现在提起你的名字应该要抖三抖了。五连胜不是巧合，是实力+心态+运气的完美共振。趁热打铁，看看你能走多远！' };
+  if (streak === 10 && lastResult === 'win') return { emoji: '👑', title: '十连胜！！！', detail: '十！连！胜！这个纪录足够你吹一辈子了。你已经不是在打麻将了，你是在麻将桌上开个人演唱会。所有人为你鼓掌，所有对手为你颤抖。记住今天这个日子！' };
+
+  // Net total milestones
+  const netMilestones = { 1000: '💰', 5000: '🤑', 10000: '💎' };
+  for (const [threshold, emoji] of Object.entries(netMilestones)) {
+    const t = parseInt(threshold);
+    const prevNet = net - (lastResult === 'win' ? lastAmount : -lastAmount);
+    if (net >= t && prevNet < t) {
+      return {
+        emoji,
+        title: `总盈亏突破 +${t}！`,
+        detail: `从零到${t}，你用了${newTotal}局。这不是靠一局两局赢来的，是每一局的积累。现在你可以理直气壮地说："麻将？我总体是赚钱的。"这种底气，比任何连胜都让人舒服。`,
+      };
+    }
+  }
+
+  return null;
+}
+
+function showMilestone(m) {
+  document.getElementById('msEmoji').textContent = m.emoji;
+  document.getElementById('msTitle').textContent = m.title;
+  document.getElementById('msDetail').textContent = m.detail;
+  document.getElementById('milestoneOverlay').style.display = 'flex';
+}
+
+function closeMilestone() {
+  document.getElementById('milestoneOverlay').style.display = 'none';
+}
+
+// ==================== HISTORY ====================
+function deleteRecord(id) {
+  let records = getRecords();
+  records = records.filter(r => r.id !== id);
+  saveRecords(records);
+  renderHistory();
+  renderStreak();
+  updateEmotionBanner();
+  updateQuickStats();
+  if (document.getElementById('sec-summary').classList.contains('active')) {
+    renderSummaries();
+  }
+}
+
+function generateDiaryStory(r, idx, records, totalStreak, isMilestone) {
+  const isWin = r.result === 'win';
+  const mood = r.mood || (isWin ? '😊' : '😐');
+  const note = r.note;
+
+  // If user wrote a note, incorporate it heavily
+  if (note) {
+    if (isWin) {
+      return pick([
+        `赢了！她说"${note}"。赢钱的时候说出这种话，感觉一定特别爽吧～这局值得被多回味几遍。`,
+        `一场胜利，她留下的话是"${note}"。赢球的快乐从字里行间都能感受到。`,
+      ]);
+    } else {
+      return pick([
+        `虽然输了，但她说"${note}"。输钱还能想到这个，说明心态是真的稳。`,
+        `输了，她的心情记录是"${note}"。没关系，下次赢了就换一句更开心的话。`,
+      ]);
+    }
+  }
+
+  // Generate story from mood + result + streak
+  const stories = {
+    win: {
+      '😆': [
+        '打完这场直接笑出了声，整个人都在发光！这种发自内心的快乐，比赢多少钱都珍贵。',
+        '赢了之后开心到飞起，大概走路都是蹦着的吧～赢牌的感觉就该这么放肆！',
+      ],
+      '😊': [
+        '赢得很舒服，不骄不躁，就是那种"一切尽在掌握"的从容。这才是高手的样子。',
+        '淡淡的微笑背后是一局稳扎稳打的胜利。不张扬，但每一手牌都在她掌控之中。',
+      ],
+      '😐': [
+        '赢了但很淡定——这种心态最可怕，因为说明她已经把赢当成常态了。',
+        '面无表情地收钱，这才是最让对手心寒的赢法。冷静、克制、致命。',
+      ],
+      '😤': [
+        '虽然赢了但好像不太满意？可能是觉得没打出最佳状态。但赢就是赢，她已经很棒了！',
+        '赢了还不爽，说明她对自己要求很高。这种自我要求会让她越来越强。',
+      ],
+      '😭': [
+        '赢了还难过？可能是赢得太惊险了，或者是对手太惨了让她心软。心地善良的人才会赢了还心疼别人。',
+      ],
+    },
+    lose: {
+      '😆': [
+        '输了还笑得出来，这心态已经碾压99%的牌友了。输钱不输心情，这才是麻将的最高境界。',
+        '输了但依然开心——说明她享受的不是输赢，是那个打牌的过程本身。这种境界，佩服。',
+      ],
+      '😊': [
+        '输了但情绪稳定，微微一笑。这种心态迟早会让她赢回来的，因为运气喜欢从容的人。',
+        '输也输得优雅。不气不恼，只是觉得今天运气不在自己这边。下次运气就回来了。',
+      ],
+      '😐': [
+        '输了就这样，不悲不喜，心如止水。这种"输得起"的态度，比"赢得起"更让人佩服。',
+        '淡淡的，仿佛这场失利只是一阵风，吹过就散了。明天太阳照样升起。',
+      ],
+      '😤': [
+        '输得有点不爽！正常的，谁输了还笑嘻嘻的？这股不服输的劲儿，正是她下次赢的动力。',
+        '有点小情绪了——这说明她在乎，在乎每一局的胜负。这份认真值得被尊重。',
+      ],
+      '😭': [
+        '输得很难过，真的好心疼。希望她快点缓过来，因为她不知道下一次赢会有多大。',
+        '看到她难过，我的心也跟着难受。但请相信，运气不会一直坏下去的。这一局输掉的情绪，下一局赢回来的时候都会加倍补偿。',
+      ],
+    },
+  };
+
+  const category = isWin ? 'win' : 'lose';
+  const moodStories = stories[category][mood] || stories[category]['😐'];
+  return pick(moodStories);
+}
+
+function renderHistory() {
+  const records = getRecords();
+  const container = document.getElementById('records');
+  if (records.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="big-emoji">🀄</div>还没有记录呢～每一局都是一篇日记的开始 📖</div>';
+    return;
+  }
+
+  // Find milestone indices
+  const milestones = new Set();
+  let winCount = 0;
+  const seenStreaks = {};
+  for (let i = records.length - 1; i >= 0; i--) {
+    const r = records[i];
+    if (r.result === 'win') winCount++;
+    // Milestone: 1st, 10th, 50th, 100th game
+    if (records.length - i === 1 || records.length - i === 10 || records.length - i === 50 || records.length - i === 100) {
+      milestones.add(i);
+    }
+    // Milestone: 1st, 5th, 10th, 20th, 50th win
+    if ((winCount === 1 || winCount === 5 || winCount === 10 || winCount === 20 || winCount === 50) && r.result === 'win') {
+      milestones.add(i);
+    }
+  }
+
+  container.innerHTML = records.map((r, idx) => {
+    const isWin = r.result === 'win';
+    const bgClass = isWin ? 'win-bg' : 'lose-bg';
+    const amountStr = (isWin ? '+' : '-') + r.amount;
+    const resultClass = isWin ? 'win-text' : 'lose-text';
+    const mood = r.mood || (isWin ? '😊' : '😐');
+    const dateStr = new Date(r.date + 'T00:00:00').toLocaleDateString('zh-CN', {
+      month: 'short', day: 'numeric', weekday: 'short'
+    });
+    const isMilestone = milestones.has(idx);
+
+    // Get streak for this record
+    let streakForward = 1;
+    for (let i = idx - 1; i >= 0; i--) {
+      if (records[i].result === r.result) streakForward++;
+      else break;
+    }
+    const totalStreak = streakForward;
+
+    const story = generateDiaryStory(r, idx, records, totalStreak, isMilestone);
+    const emotionShort = getRecordEmotion(r, idx, records);
+
+    return `
+      <div class="diary-record ${bgClass}">
+        <div class="d-header">
+          <div class="d-mood">${mood}</div>
+          <div>
+            <div class="d-amount ${resultClass}">${amountStr}</div>
+            <div class="d-date">${dateStr}</div>
+          </div>
+        </div>
+        <div class="d-story">${story}</div>
+        ${r.note ? `<div class="d-note">"${r.note}"</div>` : ''}
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="d-badge ${isMilestone ? 'badge-milestone' : ''}" style="background:${isWin?'#ffe0e0':'#f0f0f0'};color:${isWin?'#c0392b':'#888'};">
+            ${isMilestone ? '🏅 ' : ''}${emotionShort}
+          </span>
+          <button class="btn btn-ghost btn-sm" onclick="deleteRecord(${r.id})">删除</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function getRecordEmotion(record, idx, allRecords) {
+  const total = allRecords.length;
+  let streakForward = 1, streakBackward = 0;
+  for (let i = idx - 1; i >= 0; i--) {
+    if (allRecords[i].result === record.result) streakForward++;
+    else break;
+  }
+  for (let i = idx + 1; i < allRecords.length; i++) {
+    if (allRecords[i].result === record.result) streakBackward++;
+    else break;
+  }
+  const totalStreak = streakForward + streakBackward;
+
+  if (record.result === 'win') {
+    if (record.amount >= 800) return pick(['💰 赢麻了', '🤑 暴击', '💎 天降横财', '🎰 头奖']);
+    if (record.amount >= 400) return pick(['💎 大获全胜', '🏆 含金量拉满', '🎯 重磅胜利', '✨ 大丰收']);
+    if (totalStreak >= 5) return pick(['🔥 ' + totalStreak + '连胜巅峰', '👑 王者之路', '⚡ 无人能挡']);
+    if (totalStreak >= 3) return pick(['🔥 ' + totalStreak + '连胜', '📈 势不可挡', '⚡ 状态火热']);
+    if (idx === total - 1) return pick(['🎊 开门红', '🌟 梦幻开局', '✨ 首战告捷']);
+    if (idx > 0 && allRecords[idx - 1] && allRecords[idx - 1].result === 'lose') {
+      return pick(['💪 强势反弹', '🔄 触底反弹', '🎯 精准反击', '⚔️ 绝地反击']);
+    }
+    return pick(['✨ 稳扎稳打', '🎉 干净利落', '👍 稳稳的幸福', '🌸 轻松拿下', '😎 常规操作', '💫 顺风顺水']);
+  } else {
+    if (record.amount >= 800) return pick(['💔 大出血', '😭 惨烈', '🌋 血亏', '📉 爆仓']);
+    if (record.amount >= 400) return pick(['😤 有点疼', '💸 肉疼局', '😣 小重伤']);
+    if (totalStreak >= 5) return pick(['🥺 ' + totalStreak + '连败深渊', '🌧️ 至暗时刻', '📉 历史低谷']);
+    if (totalStreak >= 3) return pick(['😢 ' + totalStreak + '连败', '🌧️ 阴雨绵绵', '🔻 低潮期']);
+    if (idx === total - 1) return pick(['🌱 第一课', '📝 交学费', '🎬 序幕']);
+    if (idx > 0 && allRecords[idx - 1] && allRecords[idx - 1].result === 'win') {
+      return pick(['☁️ 小插曲', '⏸️ 暂停一下', '🍃 歇口气']);
+    }
+    return pick(['🍀 攒运气中', '🔄 下局翻盘', '💤 运气打盹', '🌈 风雨过后', '🎲 概率问题', '☕ 淡定面对']);
+  }
+}
+
+// ==================== STREAK ====================
+function renderStreak() {
+  const records = getRecords();
+  const bar = document.getElementById('streakBar');
+  const card = document.getElementById('streakCard');
+  if (records.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = '';
+  const recent10 = records.slice(0, Math.min(10, records.length)).reverse(); // chronological
+  bar.innerHTML = recent10.map(r => {
+    const cls = r.result === 'win' ? 'win-dot' : 'lose-dot';
+    const symbol = r.result === 'win' ? '✓' : '✗';
+    return `<div class="streak-dot ${cls}" title="${r.date}: ${r.result === 'win' ? '+' : '-'}${r.amount}">${symbol}</div>`;
+  }).join('');
+}
+
+// ==================== SUMMARIES ====================
+function filterByPeriod(records, startDate, endDate) {
+  return records.filter(r => {
+    const d = new Date(r.date + 'T00:00:00');
+    return d >= startDate && d <= endDate;
+  });
+}
+
+function getWeekRange() {
+  const now = new Date();
+  const day = now.getDay();
+  // Monday = 1, Sunday = 7 (0 in JS). We'll use Monday as start
+  const diffToMonday = day === 0 ? 6 : day - 1;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  return { start: monday, end: sunday, label: '本周' };
+}
+
+function getMonthRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+  return { start, end, label: '本月' };
+}
+
+function buildSummaryHTML(label, records, periodStart, periodEnd) {
+  if (records.length === 0) {
+    return `<div class="empty"><div class="big-emoji">📭</div>${label}还没有记录呢～</div>`;
+  }
+
+  const wins = records.filter(r => r.result === 'win');
+  const losses = records.filter(r => r.result === 'lose');
+  const total = records.length;
+  const winRate = total > 0 ? ((wins.length / total) * 100).toFixed(0) : 0;
+  const net = records.reduce((s, r) => s + (r.result === 'win' ? r.amount : -r.amount), 0);
+  const maxWin = wins.length > 0 ? Math.max(...wins.map(r => r.amount)) : 0;
+  const maxLose = losses.length > 0 ? Math.max(...losses.map(r => r.amount)) : 0;
+
+  const dateStr = periodStart.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+    + ' — ' + periodEnd.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+
+  // Emotion
+  let mood, emoji, emotionText;
+  if (total === 0) {
+    mood = 'mixed'; emoji = '🀄'; emotionText = '';
+  } else if (winRate >= 70) {
+    mood = 'positive';
+    emoji = pick(['🌟', '🔥', '👑', '💎']);
+    emotionText = pick([
+      `${label}胜率高达${winRate}%，打了${total}局赢了${wins.length}局！这简直是在牌桌上开无双。以这个效率打下去，这个月你就是朋友圈里最让人羡慕的那个人 ✨`,
+      `${label}表现炸裂！${total}场${wins.length}胜，净赚${net >= 0 ? '+' + net : net}。数据好看得让人想裱起来挂墙上。期待你继续保持这个状态，让这个数字越来越漂亮 🏆`,
+      `漂亮的${label}！${winRate}%的胜率放在哪里都是顶级的。你不仅是运气好，更重要的是每一局都打得很认真。认真的人最可怕，也最值得被尊重 💯`,
+    ]);
+  } else if (winRate >= 50) {
+    mood = 'positive';
+    emoji = pick(['😊', '👍', '✨', '💫']);
+    emotionText = pick([
+      `${label}稳扎稳打，${total}局${wins.length}胜，净收支${net >= 0 ? '+' + net : net}。胜率过半就是好样的，说明大多数时候运气和实力都在你这边。保持这个节奏，会越来越好的 🌿`,
+      `${label}总结：${total}战${wins.length}胜，胜率刚好过半。这是最健康的状态——赢得起也输得起，心态平稳，状态在线。不贪不急，细水长流才是真本事 ☀️`,
+      `${label}表现不错！有赢有输，但总体保持在盈利线上。这说明你不是靠运气在波动，而是靠实力在稳定输出。这种稳定感比大起大落要珍贵得多 💪`,
+    ]);
+  } else if (net >= 0) {
+    mood = 'mixed';
+    emoji = pick(['🤔', '⚖️', '🎭']);
+    emotionText = pick([
+      `${label}虽然胜率不太好看，但总账居然是平的（甚至还有赚）！这说明什么？说明你赢的时候赢大的，输的时候输小的——这其实是非常聪明的"资金管理"策略。不是运气型选手，是智慧型 😌`,
+      `${label}数据有点意思：胜率不高但没亏。这是典型的"赢大输小"打法，表面上看胜场不多，实际算账一点都不虚。继续保持这种风险控制意识 🧠`,
+    ]);
+  } else {
+    mood = 'negative';
+    emoji = pick(['🤗', '💕', '🍀', '🌧️']);
+    emotionText = pick([
+      `${label}运气确实没怎么站在你这边。但是！一周/一个月的小样本说明不了任何问题。你之前赢过的漂亮局数加起来绝对碾压这周的亏损。运气是流动的，下一周/下个月就会好起来 🌈`,
+      `${label}过得不太顺，输了${net}，心情可能不太好。但我想说的是：输钱和实力是两码事，你这个月打的每一局都和之前一样认真。运气这种东西就像天气，坏天气总会过去的，太阳一定会出来 ☀️`,
+      `${label}的表现虽然账面上是亏的，但别忘了你打麻将的初衷——是为了开心，是为了和朋友在一起的那个过程。钱可以再赢回来，但那些欢笑和放松，是别人拿不走的 🥰`,
+    ]);
+  }
+
+  const statsHTML = `
+    <div style="font-size:0.78em;color:var(--text-light);margin-bottom:10px;">📅 ${dateStr}</div>
+    <div class="summary-stats">
+      <div class="summary-stat"><div class="num n">${total}</div><div class="label">总局数</div></div>
+      <div class="summary-stat"><div class="num w">${wins.length}</div><div class="label">🏆 赢</div></div>
+      <div class="summary-stat"><div class="num l">${losses.length}</div><div class="label">😤 输</div></div>
+      <div class="summary-stat"><div class="num n">${winRate}%</div><div class="label">胜率</div></div>
+    </div>
+    <div class="summary-stats">
+      <div class="summary-stat"><div class="num" style="color:${net>=0?'var(--win)':'var(--lose)'};">${net>=0?'+':''}${net}</div><div class="label">💰 净盈亏</div></div>
+      <div class="summary-stat"><div class="num" style="color:var(--win);">+${maxWin}</div><div class="label">最大赢</div></div>
+      <div class="summary-stat"><div class="num" style="color:var(--lose);">-${maxLose}</div><div class="label">最大输</div></div>
+      <div class="summary-stat"><div class="num n">${records.filter(r=>r.note).length}</div><div class="label">📝 有备注</div></div>
+    </div>`;
+
+  const emotionHTML = emotionText ? `
+    <div class="summary-emotion ${mood}">
+      <div class="se-emoji">${emoji}</div>
+      <div>${emotionText}</div>
+    </div>` : '';
+
+  return statsHTML + emotionHTML;
+}
+
+function renderSummaries() {
+  const records = getRecords();
+  const weekRange = getWeekRange();
+  const monthRange = getMonthRange();
+
+  const weekRecords = filterByPeriod(records, weekRange.start, weekRange.end);
+  const monthRecords = filterByPeriod(records, monthRange.start, monthRange.end);
+
+  document.getElementById('trendChart').innerHTML = buildTrendChart(records);
+  document.getElementById('weekContent').innerHTML = buildSummaryHTML('本周', weekRecords, weekRange.start, weekRange.end);
+  document.getElementById('monthContent').innerHTML = buildSummaryHTML('本月', monthRecords, monthRange.start, monthRange.end);
+}
+
+// ==================== TREND CHART ====================
+function buildTrendChart(records) {
+  if (records.length === 0) {
+    return '<div class="empty"><div class="big-emoji">📊</div>还没有数据可以画图呢</div>';
+  }
+
+  const recent = records.slice(0, Math.min(20, records.length)).reverse(); // chronological, max 20
+
+  // Find max amount for scaling
+  const maxAmount = Math.max(...recent.map(r => r.amount), 1);
+  const maxHeight = 90; // max bar height in px
+  const minHeight = 8;
+
+  const bars = recent.map(r => {
+    const h = Math.max(minHeight, Math.round((r.amount / maxAmount) * maxHeight));
+    const cls = r.result === 'win' ? 'win-bar' : 'lose-bar';
+    const label = `${r.result === 'win' ? '+' : '-'}${r.amount}`;
+    return `<div class="bar ${cls}" style="height:${h}px;" title="${r.date}: ${label}"></div>`;
+  }).join('');
+
+  const labels = recent.map(r => {
+    const d = new Date(r.date + 'T00:00:00');
+    return `<span>${d.getMonth()+1}/${d.getDate()}</span>`;
+  }).join('');
+
+  // Net total line
+  let runningNet = 0;
+  const netPoints = recent.map(r => {
+    runningNet += r.result === 'win' ? r.amount : -r.amount;
+    return runningNet;
+  });
+  const netMin = Math.min(...netPoints, 0);
+  const netMax = Math.max(...netPoints, 1);
+  const netRange = netMax - netMin || 1;
+
+  const netSummary = runningNet;
+  const netColor = netSummary >= 0 ? 'var(--win)' : 'var(--lose)';
+  const netSign = netSummary >= 0 ? '+' : '';
+  const trend = netPoints.length >= 2 && netPoints[netPoints.length - 1] > netPoints[0] ? '📈 上升' : '📉 下降';
+
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-size:0.8em;color:var(--text-light);">最近${recent.length}局走势</span>
+      <span style="font-size:0.8em;font-weight:700;color:${netColor};">累计 ${netSign}${netSummary} · ${trend}</span>
+    </div>
+    <div class="chart-container">
+      <div class="bar-chart">${bars}</div>
+      <div class="chart-labels">${labels}</div>
+    </div>
+    <div style="display:flex;gap:16px;font-size:0.72em;color:var(--text-light);margin-top:4px;">
+      <span>🟥 赢</span><span>⬜ 输</span><span>柱高=盈亏金额</span>
+    </div>`;
+}
+
+// ==================== REMINDERS ====================
+function addReminder() {
+  const date = document.getElementById('remDate').value;
+  const time = document.getElementById('remTime').value;
+  const note = document.getElementById('remNote').value.trim();
+
+  if (!date || !time) { toast('请填写日期和时间'); return; }
+
+  const reminders = getReminders();
+  reminders.push({
+    id: Date.now(),
+    datetime: date + 'T' + time,
+    note,
+    notified: false
+  });
+  reminders.sort((a, b) => a.datetime.localeCompare(b.datetime));
+  saveReminders(reminders);
+
+  document.getElementById('remNote').value = '';
+  toast('✅ 提醒已添加');
+  renderReminders();
+}
+
+function deleteReminder(id) {
+  let reminders = getReminders();
+  reminders = reminders.filter(r => r.id !== id);
+  saveReminders(reminders);
+  renderReminders();
+}
+
+function renderReminders() {
+  const reminders = getReminders();
+  const container = document.getElementById('reminders');
+  if (reminders.length === 0) {
+    container.innerHTML = '<div class="empty"><div class="big-emoji">📅</div>暂无提醒</div>';
+    return;
+  }
+  container.innerHTML = reminders.map(r => {
+    const dt = new Date(r.datetime);
+    const now = new Date();
+    const isPast = dt < now;
+    const badgeClass = isPast ? 'badge-past' : 'badge-upcoming';
+    const badgeText = isPast ? '已过期' : '待开局';
+    const dateStr = dt.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', weekday: 'short' });
+    const timeStr = dt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+    return `
+      <div class="reminder-item">
+        <div>
+          <div class="r-time">${dateStr} ${timeStr}</div>
+          ${r.note ? `<div class="r-detail">📍 ${r.note}</div>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="r-badge ${badgeClass}">${badgeText}</span>
+          <button class="btn btn-ghost btn-sm" onclick="deleteReminder(${r.id})">✕</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ==================== INIT ====================
+(function init() {
+  document.getElementById('recDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('remDate').value = new Date().toISOString().split('T')[0];
+  updateEmotionBanner();
+  updateQuickStats();
+  renderReminders();
+
+  if (Notification && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+  checkReminders();
+  setInterval(checkReminders, 60000);
+})();
+
+function checkReminders() {
+  const reminders = getReminders();
+  const now = new Date();
+  let changed = false;
+  reminders.forEach(r => {
+    const dt = new Date(r.datetime);
+    const diff = dt - now;
+    if (!r.notified && diff > 0 && diff < 30 * 60 * 1000) {
+      if (Notification && Notification.permission === 'granted') {
+        new Notification('🀄 麻将时间快到了！', {
+          body: `约局提醒：${dt.toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'})} ${r.note || ''}`,
+        });
+      }
+      r.notified = true;
+      changed = true;
+    }
+  });
+  if (changed) {
+    saveReminders(reminders);
+    if (document.getElementById('sec-reminder').classList.contains('active')) renderReminders();
+  }
+}
+</script>
+
+</body>
+</html>

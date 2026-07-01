@@ -1,0 +1,151 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --paper: #f5f0e6;
+    --ink: #1a1614;
+    --gold: #a8741a;
+    --seal: #8b2c2c;
+    color-scheme: light;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: "Lora", "Noto Serif SC", serif;
+    background-color: var(--paper);
+    color: var(--ink);
+    line-height: 1.65;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 纸张纹理 + 噪点叠加 */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: radial-gradient(
+        circle at 18% 22%,
+        rgba(168, 116, 26, 0.05) 0%,
+        transparent 38%
+      ),
+      radial-gradient(circle at 82% 78%, rgba(139, 44, 44, 0.04) 0%, transparent 42%),
+      radial-gradient(circle at 50% 50%, rgba(107, 93, 79, 0.03) 0%, transparent 60%);
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0 0.06 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  #root {
+    position: relative;
+    z-index: 1;
+  }
+
+  ::selection {
+    background-color: rgba(168, 116, 26, 0.25);
+    color: var(--ink);
+  }
+
+  /* 自定义滚动条 */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #ede4d0;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #c9b896;
+    border: 2px solid #ede4d0;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--gold);
+  }
+}
+
+@layer components {
+  /* 章节首字下沉 */
+  .drop-cap::first-letter {
+    font-family: "Cormorant Garamond", "Noto Serif SC", serif;
+    font-size: 3.6em;
+    line-height: 0.8;
+    float: left;
+    margin: 0.08em 0.1em 0 0;
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  /* 细线分隔 */
+  .hairline {
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      rgba(26, 22, 20, 0.25) 20%,
+      rgba(26, 22, 20, 0.25) 80%,
+      transparent
+    );
+  }
+
+  .hairline-gold {
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      rgba(168, 116, 26, 0.6) 50%,
+      transparent
+    );
+  }
+
+  /* 古铜金主按钮 */
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-2 rounded-none border border-gold-dark bg-gold px-8 py-3 font-chinese text-sm tracking-widest2 text-paper transition-all duration-300 hover:bg-gold-dark hover:shadow-gold;
+  }
+
+  /* 描边次按钮 */
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-none border border-ink/30 bg-transparent px-8 py-3 font-chinese text-sm tracking-widest2 text-ink transition-all duration-300 hover:border-gold hover:text-gold;
+  }
+
+  /* 印章式标签 */
+  .seal-tag {
+    @apply inline-flex items-center justify-center border border-seal/70 px-3 py-1 font-chinese text-xs tracking-widest text-seal;
+    background: rgba(139, 44, 44, 0.04);
+  }
+
+  /* 章节标号 */
+  .chapter-num {
+    font-family: "Italiana", "Noto Serif SC", serif;
+    font-size: 0.875rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .writing-vertical {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+}
